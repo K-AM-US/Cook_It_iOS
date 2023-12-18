@@ -6,3 +6,14 @@
 //
 
 import Foundation
+import UIKit
+
+extension UITabBarController: UITabBarControllerDelegate {
+    public func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
+        if viewController is UINavigationController {
+            if let navController = viewController as? UINavigationController {
+                navController.popViewController(animated: false)
+            }
+        }
+    }
+}

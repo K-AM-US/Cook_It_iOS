@@ -6,3 +6,10 @@
 //
 
 import Foundation
+
+class RecipeDetailServiceManager {
+    func getRecipeDetail(id: String, completion: @escaping () -> Void) -> RecipeDetailDto {
+        
+        guard let url = URL(string: Constants.baseUrl + "recipe" + id)
+    }
+}

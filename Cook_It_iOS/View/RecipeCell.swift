@@ -7,8 +7,20 @@
 
 import UIKit
 
-class RecipeCell: UITableViewCell {
+protocol RecipeCellDelegate {
+    func button(button: UIButton, touchedIn cell: RecipeCell)
+}
 
+class RecipeCell: UITableViewCell {
+    
+    var delegate: RecipeCellDelegate?
+    
+    @IBOutlet var recipeImage: UIImageView!
+    @IBOutlet var recipeTitle: UILabel!
+    @IBOutlet var recipeFavouriteButton: UIButton!
+    @IBOutlet var recipeCommentButton: UIButton!
+    @IBOutlet var recipeShareButton: UIButton!
+    
     override func awakeFromNib() {
         super.awakeFromNib()
         // Initialization code
@@ -19,5 +31,12 @@ class RecipeCell: UITableViewCell {
 
         // Configure the view for the selected state
     }
+    
+    @IBAction func buttonTouch(_ button: UIButton) {
+        if delegate != nil {
+            delegate!.button(button: button, touchedIn: self)
+        }
+    }
+    
 
 }

@@ -6,3 +6,8 @@
 //
 
 import Foundation
+
+struct CategoryDto: Codable {
+    var category: String
+    var category_icon: String
+}

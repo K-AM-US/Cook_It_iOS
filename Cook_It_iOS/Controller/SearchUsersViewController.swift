@@ -17,6 +17,36 @@ class SearchUsersViewController: UIViewController, UITableViewDataSource, UITabl
     private var users: [UserDto] = []
     private var filteredUsers: [UserDto] = []
     
+    let buttonReload: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Recargar", for: .normal)
+        button.tintColor = UIColor(named: "blueCookIt")
+        button.configuration = .filled()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        
+        return button
+    }()
+    
+    let networkMessage: UILabel = {
+        let label = UILabel()
+        label.text = "Ocurrió un error,\n intenta otra vez"
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.font = UIFont.preferredFont(forTextStyle: .title1)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        
+        return label
+    }()
+    
+    let progressBar: UIActivityIndicatorView = {
+        let progress = UIActivityIndicatorView()
+        progress.style = .large
+        progress.color = UIColor(named: "blueCookIt")
+        progress.translatesAutoresizingMaskIntoConstraints = false
+        
+        return progress
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -24,16 +54,48 @@ class SearchUsersViewController: UIViewController, UITableViewDataSource, UITabl
         searchUsersTable.delegate = self
         
         searchBar.delegate = self
-
-        userServiceManager.getUsers { users in
-            
-            self.users = users
-            self.filteredUsers = users
-            
-            DispatchQueue.main.async {
-                self.searchUsersTable.reloadData()
+        
+        view.addSubview(progressBar)
+        progressBar.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+        progressBar.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
+        progressBar.startAnimating()
+        progressBar.isHidden = false
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        if InternetMonitor.shared.internetStatus {
+            buttonReload.isHidden = true
+            searchUsersTable.isHidden = false
+            searchBar.isHidden = false
+            userServiceManager.getUsers { users in
+                
+                self.users = users
+                self.filteredUsers = users
+                
+                DispatchQueue.main.async {
+                    self.searchUsersTable.reloadData()
+                    self.progressBar.isHidden = true
+                }
             }
+        } else {
+            progressBar.isHidden = true
+            searchUsersTable.isHidden = false
+            searchBar.isHidden = false
+            buttonReload.isHidden = false
+            
+            view.addSubview(networkMessage)
+            networkMessage.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+            networkMessage.topAnchor.constraint(equalTo: view.topAnchor, constant: 300).isActive = true
+            
+            self.view.addSubview(buttonReload)
+            buttonReload.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+            buttonReload.topAnchor.constraint(equalTo: networkMessage.bottomAnchor, constant: 130).isActive = true
+            buttonReload.addTarget(self, action: #selector(reload), for: .touchUpInside)
         }
+    }
+    
+    @objc func reload() {
+        viewDidAppear(true)
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -67,10 +129,15 @@ class SearchUsersViewController: UIViewController, UITableViewDataSource, UITabl
         if segue.identifier == "userDetail" {
             let destination = segue.destination as! AccountViewController
             
+            let indexPath = searchUsersTable.indexPathForSelectedRow
+            let row = indexPath?.row
+            
             destination.isLocalUser = false
-            destination.userOwnID = userServiceManager.getUser(at: searchUsersTable.indexPathForSelectedRow!.row).id
-            destination.userOwnImage = userServiceManager.getUser(at: searchUsersTable.indexPathForSelectedRow!.row).image
-            destination.userOwnRecipes = userServiceManager.getUser(at: searchUsersTable.indexPathForSelectedRow!.row).recipes
+            destination.userOwnID = filteredUsers[row!].id
+            destination.usernameOwn = filteredUsers[row!].username
+            destination.userOwnFullName = filteredUsers[row!].first_name + " " + filteredUsers[row!].last_name
+            destination.userOwnImage = filteredUsers[row!].image
+            destination.userOwnRecipes = filteredUsers[row!].recipes
         }
     }
     

@@ -6,21 +6,26 @@
 //
 
 import UIKit
+import Firebase
+import FirebaseAuth
 
 class NewRecipeViewController: UIViewController {
+    
+    var isEditingRecipe: Bool? = false
+    var editingId: String = ""
     
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     private let scrollView: UIScrollView = {
         let view = UIScrollView()
-//        view.translatesAutoresizingMaskIntoConstraints = false
+        view.translatesAutoresizingMaskIntoConstraints = false
         
         return view
     }()
     
     private let contentScrollView: UIView = {
         let view = UIView()
-//        view.translatesAutoresizingMaskIntoConstraints = false
+        view.translatesAutoresizingMaskIntoConstraints = false
         
         return view
     }()
@@ -92,6 +97,8 @@ class NewRecipeViewController: UIViewController {
         button.configuration?.baseBackgroundColor = .systemGreen
         button.configuration?.cornerStyle = .medium
         button.setTitle("+", for: .normal)
+        button.isEnabled = true
+        button.isUserInteractionEnabled = true
         button.translatesAutoresizingMaskIntoConstraints = false
         
         return button
@@ -103,6 +110,8 @@ class NewRecipeViewController: UIViewController {
         button.configuration?.baseBackgroundColor = .systemRed
         button.configuration?.cornerStyle = .medium
         button.setTitle("-", for: .normal)
+        button.isEnabled = true
+        button.isUserInteractionEnabled = true
         button.translatesAutoresizingMaskIntoConstraints = false
         
         return button
@@ -114,6 +123,8 @@ class NewRecipeViewController: UIViewController {
         button.configuration?.baseBackgroundColor = .systemGreen
         button.configuration?.cornerStyle = .medium
         button.setTitle("+", for: .normal)
+        button.isEnabled = true
+        button.isUserInteractionEnabled = true
         button.translatesAutoresizingMaskIntoConstraints = false
         
         return button
@@ -125,6 +136,8 @@ class NewRecipeViewController: UIViewController {
         button.configuration?.baseBackgroundColor = .systemRed
         button.configuration?.cornerStyle = .medium
         button.setTitle("-", for: .normal)
+        button.isEnabled = true
+        button.isUserInteractionEnabled = true
         button.translatesAutoresizingMaskIntoConstraints = false
         
         return button
@@ -135,6 +148,8 @@ class NewRecipeViewController: UIViewController {
         button.configuration = .filled()
         button.configuration?.cornerStyle = .medium
         button.setTitle("Crear receta", for: .normal)
+        button.isEnabled = true
+        button.isUserInteractionEnabled = true
         button.translatesAutoresizingMaskIntoConstraints = false
         
         return button
@@ -142,27 +157,24 @@ class NewRecipeViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        self.view.addSubview(scrollView)
-        
 
         self.view.addSubview(scrollView)
-        scrollView.frame = self.view.bounds
+        scrollView.topAnchor.constraint(equalTo: view.topAnchor, constant: 50).isActive = true
+        scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
+        scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
+        scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -90).isActive = true
+        
+        scrollView.heightAnchor.constraint(equalToConstant: view.frame.height).isActive = true
+        scrollView.widthAnchor.constraint(equalToConstant: view.frame.width).isActive = true
+        
         scrollView.addSubview(contentScrollView)
-        contentScrollView.frame = scrollView.bounds
-        contentScrollView.addSubview(inputBox)
+        contentScrollView.topAnchor.constraint(equalTo: scrollView.topAnchor).isActive = true
+        contentScrollView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor).isActive = true
+        contentScrollView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor).isActive = true
+        contentScrollView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor).isActive = true
         
-//        self.view.addSubview(scrollView)
-//        scrollView.topAnchor.constraint(equalTo: view.topAnchor, constant: 50).isActive = true
-//        scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
-//        scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
-//        scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -90).isActive = true
-        
-//        scrollView.addSubview(contentScrollView)
-//        contentScrollView.topAnchor.constraint(equalTo: scrollView.topAnchor).isActive = true
-//        contentScrollView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor).isActive = true
-//        contentScrollView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor).isActive = true
-//        contentScrollView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor).isActive = true
+        contentScrollView.heightAnchor.constraint(equalToConstant: view.frame.height).isActive = true
+        contentScrollView.widthAnchor.constraint(equalToConstant: view.frame.width).isActive = true
         
         contentScrollView.addSubview(inputBox)
         inputBox.widthAnchor.constraint(equalToConstant: 220).isActive = true
@@ -199,7 +211,6 @@ class NewRecipeViewController: UIViewController {
         removeButton.heightAnchor.constraint(equalToConstant: 40).isActive = true
         removeButton.addTarget(self, action: #selector(removeIngredient), for: .touchUpInside)
         
-        
         contentScrollView.addSubview(process)
         process.text = "Preparación"
         process.topAnchor.constraint(equalTo: addButton.bottomAnchor, constant: 35).isActive = true
@@ -229,6 +240,27 @@ class NewRecipeViewController: UIViewController {
         createRecipeButton.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
         createRecipeButton.heightAnchor.constraint(equalToConstant: 40).isActive = true
         createRecipeButton.addTarget(self, action: #selector(createRecipeButtonAction), for: .touchUpInside)
+        
+        if isEditingRecipe! {
+            createRecipeButton.setTitle("Actualizar receta", for: .normal)
+            let recipeManager = RecipeEntityManager(context: context)
+            let editing = recipeManager.getRecipe(id: editingId)
+            inputBox.text = editing?.title
+            editing?.ingredients?.forEach() { ingredient in
+                let ingredientLabel = UITextField()
+                ingredientLabel.translatesAutoresizingMaskIntoConstraints = false
+                ingredientLabel.text = ingredient
+                self.ingredientsList.addArrangedSubview(ingredientLabel)
+                ingredientLabel.leadingAnchor.constraint(equalTo: self.ingredientsList.leadingAnchor).isActive = true
+            }
+            editing?.process?.forEach() { process in
+                let processLabel = UITextField()
+                processLabel.translatesAutoresizingMaskIntoConstraints = false
+                processLabel.text = process
+                self.processList.addArrangedSubview(processLabel)
+                processLabel.leadingAnchor.constraint(equalTo: self.processList.leadingAnchor).isActive = true
+            }
+        }
     }
     
     @objc func addIngredient() {
@@ -260,10 +292,41 @@ class NewRecipeViewController: UIViewController {
     }
     
     @objc func createRecipeButtonAction() {
-        let recipeManager = RecipeEntityManager(context: context)
-        let recipeTmp = RecipeEntity(context: context)
-        recipeTmp.recipe_id = Int64(666)
-        recipeTmp.title = "esta es una receta de prueba"
-        recipeManager.createRecipe(recipe: recipeTmp)
+        if inputBox.text != "" && ingredientsList.subviews.count > 0 && processList.subviews.count > 0 {
+            let recipeManager = RecipeEntityManager(context: context)
+            let favouriteManager = FavouriteEntityManager(context: context)
+            
+            var tmpArrayI: [String] = []
+            var tmpArrayP: [String] = []
+            
+            for case let ingredientTmp as UITextField in ingredientsList.subviews {
+                tmpArrayI.append(ingredientTmp.text ?? "")
+            }
+            for case let processTmp as UITextField in processList.subviews {
+                tmpArrayP.append(processTmp.text ?? "")
+            }
+            if isEditingRecipe! == false {
+                let tmp = RecipeEntity(context: context)
+                tmp.recipe_id = Int64.random(in: 0...1000)
+                tmp.creatorId = Auth.auth().currentUser!.uid
+                tmp.title = inputBox.text
+                tmp.ingredients = tmpArrayI
+                tmp.process = tmpArrayP
+                recipeManager.createRecipe(recipe: tmp  )
+            } else {
+                
+                recipeManager.updateRecipe(recipe: recipeManager.getRecipe(id: editingId)!, title: inputBox.text ?? "", ingredients: tmpArrayI, process: tmpArrayP)
+                if favouriteManager.getFavourite(id: editingId) != nil {
+                    favouriteManager.updateFavouriteRecipe(recipe: favouriteManager.getFavourite(id: editingId)!, title: inputBox.text ?? "", ingredients: tmpArrayI, process: tmpArrayP)
+                }
+            }
+
+            self.navigationController?.popToRootViewController(animated: true)
+        } else {
+            let alert = UIAlertController(title: "Campos vacíos", message: "LLena todos los campos (ingredientes y preparación, al menos 1 de cada 1.", preferredStyle: .alert)
+            let action = UIAlertAction(title: "Aceptar", style: .cancel)
+            alert.addAction(action)
+            self.present(alert, animated: true)
+        }
     }
 }

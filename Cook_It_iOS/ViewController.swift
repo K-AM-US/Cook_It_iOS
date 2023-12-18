@@ -8,12 +8,12 @@
 import UIKit
 
 class ViewController: UIViewController {
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        print("se está entrando")
         // Do any additional setup after loading the view.
     }
-
-
 }
 

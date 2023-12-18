@@ -7,9 +7,10 @@
 
 import Foundation
 
-struct Recipe: Codable {
+struct RecipeDto: Codable {
     let recipe_id: String
     var title: String
     var type: String
-    var tags: 
+    var tags: [String]
+    var img: String?
 }

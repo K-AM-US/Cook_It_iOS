@@ -6,3 +6,10 @@
 //
 
 import Foundation
+
+struct RecipeDetailDto: Codable {
+    var title: String
+    var ingredients: [String]
+    var process: [String]
+    var image: String
+}

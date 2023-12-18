@@ -6,8 +6,10 @@
 //
 
 import UIKit
+import Firebase
+import FirebaseAuth
 
-class SearchFoodViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
+class SearchFoodViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate, RecipeCellDelegate {
 
     
     @IBOutlet var searchBar: UISearchBar!
@@ -18,6 +20,38 @@ class SearchFoodViewController: UIViewController, UICollectionViewDataSource, UI
     private var filteredRecipes: [RecipeDto] = []
     private let categoryServiceManager = CategoryServiceManager()
     private let recipeServiceManager = RecipeServiceManager()
+    
+    let buttonReload: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Recargar", for: .normal)
+        button.tintColor = UIColor(named: "blueCookIt")
+        button.configuration = .filled()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        
+        return button
+    }()
+    
+    let networkMessage: UILabel = {
+        let label = UILabel()
+        label.text = "Ocurrió un error,\n intenta otra vez"
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.font = UIFont.preferredFont(forTextStyle: .title1)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        
+        return label
+    }()
+    
+    let progressBar: UIActivityIndicatorView = {
+        let progress = UIActivityIndicatorView()
+        progress.style = .large
+        progress.color = UIColor(named: "blueCookIt")
+        progress.translatesAutoresizingMaskIntoConstraints = false
+        
+        return progress
+    }()
+    
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,25 +64,56 @@ class SearchFoodViewController: UIViewController, UICollectionViewDataSource, UI
         searchTable.dataSource = self
         searchTable.delegate = self
         
-        categoryServiceManager.getCategories(){
-            DispatchQueue.main.async {
-                self.categoryCollection.reloadData()
+        view.addSubview(progressBar)
+        progressBar.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+        progressBar.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
+        progressBar.startAnimating()
+        progressBar.isHidden = false
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        if InternetMonitor.shared.internetStatus {
+            buttonReload.isHidden = true
+            searchBar.isHidden = false
+            categoryCollection.isHidden = false
+            searchTable.isHidden = false
+            categoryServiceManager.getCategories(){
+                DispatchQueue.main.async {
+                    self.categoryCollection.reloadData()
+                }
             }
-        }
-        
-        recipeServiceManager.getRecipes(){ recipes in
-            
-            self.recipes = recipes
-            self.filteredRecipes = recipes
-            
-            DispatchQueue.main.async {
-                self.searchTable.reloadData()
+            recipeServiceManager.getRecipes(){ recipes in
+                self.recipes = recipes
+                self.filteredRecipes = recipes
+                DispatchQueue.main.async {
+                    self.searchTable.reloadData()
+                    self.progressBar.isHidden = true
+                }
             }
+        } else {
+            progressBar.isHidden = true
+            buttonReload.isHidden = false
+            networkMessage.isHidden = false
+            searchBar.isHidden = true
+            categoryCollection.isHidden = true
+            searchTable.isHidden = true
+            
+            view.addSubview(networkMessage)
+            networkMessage.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+            networkMessage.topAnchor.constraint(equalTo: view.topAnchor, constant: 300).isActive = true
+            
+            view.addSubview(buttonReload)
+            buttonReload.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+            buttonReload.topAnchor.constraint(equalTo: networkMessage.bottomAnchor, constant: 130).isActive = true
+            buttonReload.addTarget(self, action: #selector(reload), for: .touchUpInside)
         }
     }
     
+    @objc func reload() {
+        viewDidAppear(true)
+    }
+    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        
         return categoryServiceManager.countCategories()
     }
     
@@ -95,6 +160,7 @@ class SearchFoodViewController: UIViewController, UICollectionViewDataSource, UI
             cell.recipeImage.sd_setImage(with: URL(string: recipe.img ?? ""))
             cell.recipeTitle.text = recipe.title
             cell.layer.cornerRadius = 30.0
+            cell.delegate = self
             
             return cell
         }
@@ -108,9 +174,60 @@ class SearchFoodViewController: UIViewController, UICollectionViewDataSource, UI
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "recipeDetail" {
             let destination = segue.destination as! RecipeDetailViewController
-            destination.id = recipeServiceManager.getRecipe(at: searchTable.indexPathForSelectedRow!.row).recipe_id
+            
+            let indexPath = searchTable.indexPathForSelectedRow
+            let row = indexPath?.row
+            
+            destination.id = filteredRecipes[row!].recipe_id
         } else {
         
+        }
+    }
+    
+    func button(button: UIButton, touchedIn cell: RecipeCell) {
+        if Auth.auth().currentUser?.uid != nil {
+            if let indexPath = searchTable.indexPath(for: cell) {
+                if button.tag == 0 {
+                    let favouriteManager = FavouriteEntityManager(context: context)
+                    if favouriteManager.getFavourite(id:filteredRecipes[indexPath.row].recipe_id) == nil {
+                        recipeServiceManager.getRecipeDetail(id: filteredRecipes[indexPath.row].recipe_id) { detail in
+                            let favourite = FavouriteRecipe(context: self.context)
+                            favourite.favouriteRecipeID = self.filteredRecipes[indexPath.row].recipe_id
+                            favourite.userId = Auth.auth().currentUser?.uid ?? ""
+                            favourite.favouriteRecipeTitle = detail.title
+                            favourite.favouriteRecipeIngredients = detail.ingredients
+                            favourite.favouriteRecipeProcess = detail.process
+                            
+                            favouriteManager.createFavoutite(recipe: favourite)
+                        }
+                        let alert = UIAlertController(title: "Receta favorita", message: "Agregaste esta receta!", preferredStyle: .alert)
+                        let action = UIAlertAction(title: "Aceptar", style: .default)
+                        alert.addAction(action)
+                        present(alert, animated: true)
+                    } else {
+                        if let deleteFavourite = favouriteManager.getFavourite(id: filteredRecipes[indexPath.row].recipe_id) {
+                            favouriteManager.deleteFavourite(favourite: deleteFavourite)
+                            let alert = UIAlertController(title: "Receta favorita eliminada", message: "Eliminaste esta receta de tus favoritas", preferredStyle: .alert)
+                            let action = UIAlertAction(title: "Aceptar", style: .default)
+                            alert.addAction(action)
+                            present(alert, animated: true)
+                        } else {
+                            print("No se pudo eliminar de favoritos")
+                        }
+                    }
+                }
+                if button.tag == 1 {
+                    print("comment")
+                }
+                if button.tag == 2 {
+                    print("share")
+                }
+            }
+        } else {
+            let alert = UIAlertController(title: "Se requiere iniciar sesión", message: "Para hacer uso de esta característica se debe iniciar sesión", preferredStyle: .alert)
+            let action = UIAlertAction(title: "Aceptar", style: .default)
+            alert.addAction(action)
+            present(alert, animated: true)
         }
     }
     

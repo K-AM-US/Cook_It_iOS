@@ -9,4 +9,6 @@ import UIKit
 
 class RecipeCarouselCell: UICollectionViewCell {
     
+    @IBOutlet var recipeImage: UIImageView!
+    
 }

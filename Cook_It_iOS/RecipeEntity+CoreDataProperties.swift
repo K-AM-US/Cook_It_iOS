@@ -17,9 +17,10 @@ extension RecipeEntity {
     }
 
     @NSManaged public var recipe_id: Int64
+    @NSManaged public var creatorId: String
     @NSManaged public var title: String?
-    @NSManaged public var ingredients: NSObject?
-    @NSManaged public var process: NSObject?
+    @NSManaged public var ingredients: [String]?
+    @NSManaged public var process: [String]?
     @NSManaged public var img: String?
 
 }

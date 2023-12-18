@@ -16,7 +16,8 @@ extension FriendEntity {
         return NSFetchRequest<FriendEntity>(entityName: "FriendEntity")
     }
 
-    @NSManaged public var friendId: String?
+    @NSManaged public var friendId: String
+    @NSManaged public var userId: String
 
 }
 
