@@ -36,6 +36,7 @@ class AccountViewController: UIViewController, UITableViewDelegate, UITableViewD
     var userOwnRecipes: [String] = []
     private var tmpUserRecipes: [RecipeDto] = []
     private var tmpLocalRecipes: [RecipeEntity] = []
+    private var tmpUserRecipesID: [String] = []
     
     private let emptyMessage: UILabel = {
         let label = UILabel()
@@ -121,8 +122,9 @@ class AccountViewController: UIViewController, UITableViewDelegate, UITableViewD
             
             recipeService.getRecipes() { recipes in
                 recipes.forEach() { recipe in
-                    if self.userOwnRecipes.contains(recipe.recipe_id){
+                    if self.userOwnRecipes.contains(recipe.recipe_id) && !self.tmpUserRecipesID.contains(recipe.recipe_id) {
                         self.tmpUserRecipes.append(recipe)
+                        self.tmpUserRecipesID.append(recipe.recipe_id)
                     }
                 }
                 DispatchQueue.main.async {
@@ -160,7 +162,6 @@ class AccountViewController: UIViewController, UITableViewDelegate, UITableViewD
                 }
                 
                 let recipeManager = RecipeEntityManager(context: context)
-//                tmpLocalRecipes = recipeManager.getAllRecipes()
                 tmpLocalRecipes = recipeManager.getUserRecipes(uid: Auth.auth().currentUser!.uid)
                 recipeTableView.reloadData()
             } else {
@@ -178,6 +179,7 @@ class AccountViewController: UIViewController, UITableViewDelegate, UITableViewD
                 username.isHidden = true
                 userfullname.isHidden = true
                 settingsButton.isHidden = true
+                emptyMessageLocal.isHidden = true
             }
         }
 
@@ -321,10 +323,21 @@ class AccountViewController: UIViewController, UITableViewDelegate, UITableViewD
                     }
                 }
                 if button.tag == 1 {
-                    print("comment")
+                    let window = UIAlertController(title: "Comentario", message: "Deja un comentario para esta receta", preferredStyle: .alert)
+                    window.addTextField()
+                    let action = UIAlertAction(title: "Comentar", style: .default) { result in
+                        // se recupera el comentario y se manda al servidor
+                    }
+                    let cancel = UIAlertAction(title: "Cancelar", style: .cancel)
+                    window.addAction(action)
+                    window.addAction(cancel)
+                    present(window, animated: true)
                 }
                 if button.tag == 2 {
-                    print("share")
+                    let alert = UIAlertController(title: "Link", message: "Link a la receta copiado", preferredStyle: .alert)
+                    let action = UIAlertAction(title: "Aceptar", style: .default)
+                    alert.addAction(action)
+                    present(alert, animated: true)
                 }
             }
         } else {

@@ -217,10 +217,21 @@ class SearchFoodViewController: UIViewController, UICollectionViewDataSource, UI
                     }
                 }
                 if button.tag == 1 {
-                    print("comment")
+                    let window = UIAlertController(title: "Comentario", message: "Deja un comentario para esta receta", preferredStyle: .alert)
+                    window.addTextField()
+                    let action = UIAlertAction(title: "Comentar", style: .default) { result in
+                        // se recupera el comentario y se manda al servidor
+                    }
+                    let cancel = UIAlertAction(title: "Cancelar", style: .cancel)
+                    window.addAction(action)
+                    window.addAction(cancel)
+                    present(window, animated: true)
                 }
                 if button.tag == 2 {
-                    print("share")
+                    let alert = UIAlertController(title: "Link", message: "Link a la receta copiado", preferredStyle: .alert)
+                    let action = UIAlertAction(title: "Aceptar", style: .default)
+                    alert.addAction(action)
+                    present(alert, animated: true)
                 }
             }
         } else {

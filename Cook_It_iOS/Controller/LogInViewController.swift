@@ -40,7 +40,9 @@ class LogInViewController: UIViewController {
                 }
             }
         }
+        let cancel = UIAlertAction(title: "Cancelar", style: .cancel)
         window.addAction(action)
+        window.addAction(cancel)
         present(window, animated: true)
     }
     
