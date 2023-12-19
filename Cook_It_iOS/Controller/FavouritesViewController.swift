@@ -105,6 +105,7 @@ class FavouritesViewController: UIViewController, UITableViewDataSource, UITable
                 present(window, animated: true)
             }
             if button.tag == 2 {
+                UIPasteboard.general.string = Constants.baseUrl + "recipe/" + tmpFavouriteRecipes[indexPath.row].favouriteRecipeID
                 let alert = UIAlertController(title: "Link", message: "Link a la receta copiado", preferredStyle: .alert)
                 let action = UIAlertAction(title: "Aceptar", style: .default)
                 alert.addAction(action)

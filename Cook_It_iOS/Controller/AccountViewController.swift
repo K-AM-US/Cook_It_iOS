@@ -334,6 +334,12 @@ class AccountViewController: UIViewController, UITableViewDelegate, UITableViewD
                     present(window, animated: true)
                 }
                 if button.tag == 2 {
+                    if isLocalUser{
+                        UIPasteboard.general.string = Constants.baseUrl + "recipe/" + String(tmpLocalRecipes[indexPath.row].recipe_id)
+                    } else {
+                        UIPasteboard.general.string = Constants.baseUrl + "recipe/" + tmpUserRecipes[indexPath.row].recipe_id
+                    }
+                    
                     let alert = UIAlertController(title: "Link", message: "Link a la receta copiado", preferredStyle: .alert)
                     let action = UIAlertAction(title: "Aceptar", style: .default)
                     alert.addAction(action)

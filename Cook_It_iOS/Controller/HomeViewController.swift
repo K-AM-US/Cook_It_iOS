@@ -202,6 +202,7 @@ class HomeViewController: UIViewController, UITableViewDelegate, UITableViewData
                     present(window, animated: true)
                 }
                 if button.tag == 2 {
+                    UIPasteboard.general.string = Constants.baseUrl + "recipe/" + recipeList[indexPath.row].recipe_id
                     let alert = UIAlertController(title: "Link", message: "Link a la receta copiado", preferredStyle: .alert)
                     let action = UIAlertAction(title: "Aceptar", style: .default)
                     alert.addAction(action)
